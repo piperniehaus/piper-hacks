@@ -27,3 +27,16 @@ meDecoder =
     Decode.succeed Me
         |: Decode.at [ "name" ] Decode.string
         |: Decode.field "id" Decode.int
+        |: Decode.at [ "projects" ] projectsDecoder
+
+
+projectsDecoder : Decode.Decoder (List Project)
+projectsDecoder =
+    Decode.list
+        projectDecoder
+
+
+projectDecoder : Decode.Decoder Project
+projectDecoder =
+    Decode.succeed Project
+        |: Decode.field "project_name" Decode.string

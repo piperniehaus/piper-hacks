@@ -1,7 +1,9 @@
 module Types exposing (..)
 
-import Http exposing (Error)
-
 
 type alias Me =
-    { name : String, id : Int }
+    { name : String, id : Int, projects : List Project }
+
+
+type alias Project =
+    { project_name : String }

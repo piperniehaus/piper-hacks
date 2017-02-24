@@ -51,8 +51,8 @@ init =
 
 
 type Msg
-    = GenerateValues String
-    | NewItem (Html Msg)
+    = GenerateValues (List String)
+    | NewItems (List (Html Msg))
     | FetchMeRequest
     | FetchMeResponse (Result Error Me)
     | Clear
@@ -62,12 +62,12 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GenerateValues string ->
+        GenerateValues strings ->
             -- ( model, Cmd.none )
-            ( model, Random.generate (\randList -> NewItem (randomItem string randList)) randomListGenerator )
+            ( model, Random.generate (NewItems << toRandomItems strings) (randomListsGenerator <| List.length strings) )
 
-        NewItem div ->
-            ( { model | items = List.append model.items [ div ] }, Cmd.none )
+        NewItems div ->
+            ( { model | items = List.append model.items div }, Cmd.none )
 
         FetchMeRequest ->
             ( model, Http.send (FetchMeResponse) <| fetchMeCmd model.token )
@@ -75,7 +75,7 @@ update msg model =
         FetchMeResponse result ->
             case result of
                 Ok me ->
-                    ( model, message (GenerateValues <| me.name) )
+                    ( model, message (GenerateValues <| [ me.name ]) )
 
                 Err string ->
                     let
@@ -101,7 +101,7 @@ view : Model -> Html Msg
 view model =
     div [ style [ ( "height", "100%" ), ( "width", "100%" ) ] ] <|
         List.append
-            [ button [ onClick (GenerateValues "hahahah") ] [ text "Make random text" ]
+            [ button [ onClick (GenerateValues [ "hahahah" ]) ] [ text "Make random text" ]
             , button [ onClick FetchMeRequest ] [ text "Me" ]
             , button [ onClick Clear ] [ text "Clear" ]
             , input [ onInput UpdateToken, placeholder "Tracker token" ] []
