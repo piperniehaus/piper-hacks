@@ -67,7 +67,7 @@ update msg model =
 
 randomListGenerator : Random.Generator (List Int)
 randomListGenerator =
-    Random.list 5 (Random.int 0 400)
+    Random.list 4 (Random.int 0 400)
 
 
 randomStyle : List Int -> List ( String, String )
@@ -80,9 +80,9 @@ randomStyle intList =
             (toString int) ++ "px"
 
         pixelAttributes =
-            [ "fontSize", "height", "color", "margin-left", "margin-top" ]
+            [ "fontSize", "height", "margin-left", "margin-top" ]
     in
-        List.append [ ( "position", "absolute" ) ] <|
+        List.append [ ( "position", "absolute" ), ( "color", "teal" ) ] <|
             List.map2 (\attribute int -> ( attribute, randPixel int ))
                 pixelAttributes
                 intList
