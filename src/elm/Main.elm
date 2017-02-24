@@ -4,6 +4,11 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Random
+import Task
+import Types exposing (..)
+import MeService exposing (..)
+import Http exposing (..)
+import ItemMaker exposing (..)
 
 
 -- component import example
@@ -26,13 +31,15 @@ main =
 
 type alias Model =
     { projectId : Int
+    , token : String
     , items : List (Html Msg)
     }
 
 
 init : ( Model, Cmd msg )
 init =
-    ( { projectId = 2
+    ( { projectId = 0
+      , token = ""
       , items = []
       }
     , Cmd.none
@@ -46,6 +53,10 @@ init =
 type Msg
     = GenerateValues String
     | NewItem (Html Msg)
+    | FetchMeRequest
+    | FetchMeResponse (Result Error Me)
+    | Clear
+    | UpdateToken String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -58,6 +69,27 @@ update msg model =
         NewItem div ->
             ( { model | items = List.append model.items [ div ] }, Cmd.none )
 
+        FetchMeRequest ->
+            ( model, Http.send (FetchMeResponse) <| fetchMeCmd model.token )
+
+        FetchMeResponse result ->
+            case result of
+                Ok me ->
+                    ( model, message (GenerateValues <| me.name) )
+
+                Err string ->
+                    let
+                        foo =
+                            (Debug.log "Error" string)
+                    in
+                        ( model, Cmd.none )
+
+        Clear ->
+            ( { model | items = [] }, Cmd.none )
+
+        UpdateToken token ->
+            ( { model | token = token }, Cmd.none )
+
 
 
 -- VIEW
@@ -65,38 +97,18 @@ update msg model =
 -- CSS can be applied via class names or inline style attrib
 
 
-randomListGenerator : Random.Generator (List Int)
-randomListGenerator =
-    Random.list 4 (Random.int 0 400)
-
-
-randomStyle : List Int -> List ( String, String )
-randomStyle intList =
-    let
-        randPixelValues =
-            List.drop 3 intList
-
-        randPixel int =
-            (toString int) ++ "px"
-
-        pixelAttributes =
-            [ "fontSize", "height", "margin-left", "margin-top" ]
-    in
-        List.append [ ( "position", "absolute" ), ( "color", "teal" ) ] <|
-            List.map2 (\attribute int -> ( attribute, randPixel int ))
-                pixelAttributes
-                intList
-
-
-randomItem : String -> List Int -> Html Msg
-randomItem string intList =
-    div [ style <| randomStyle intList ] [ text string ]
-
-
 view : Model -> Html Msg
 view model =
     div [ style [ ( "height", "100%" ), ( "width", "100%" ) ] ] <|
         List.append
-            [ button [ onClick (GenerateValues "hahahah") ] []
+            [ button [ onClick (GenerateValues "hahahah") ] [ text "Make random text" ]
+            , button [ onClick FetchMeRequest ] [ text "Me" ]
+            , button [ onClick Clear ] [ text "Clear" ]
+            , input [ onInput UpdateToken, placeholder "Tracker token" ] []
             ]
             model.items
+
+
+message : msg -> Cmd msg
+message x =
+    Task.perform identity (Task.succeed x)
