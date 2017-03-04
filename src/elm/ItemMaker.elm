@@ -6,22 +6,6 @@ import Html.Attributes exposing (..)
 import Color exposing (Color)
 
 
---
--- randomColorAndIntGenerator :
---     Random.Generator Color
---     -> Random.Generator List Int
---     -> Random.Generator ( Color, List Int )
--- randomColorAndIntGenerator colorGen intListGen =
---     Random.map2 (,) colorGen intListGen
---
---
-
-
-randomColorGenerator : Random.Generator Color.Color
-randomColorGenerator =
-    Random.map3 Color.rgb (Random.int 0 255) (Random.int 0 255) (Random.int 0 255)
-
-
 type alias RandomStyle =
     { fontSize : Int
     , height : Int
@@ -41,22 +25,29 @@ randomStyleListGenerator num =
     Random.list num randomStyleGenerator
 
 
-randomListGenerator : Random.Generator (List Int)
-randomListGenerator =
-    Random.list 4 (Random.int 0 400)
-
-
-randomListsGenerator : Int -> Random.Generator (List (List Int))
-randomListsGenerator numLists =
-    Random.list numLists randomListGenerator
-
-
 
 -- randomStyle : Int -> Int -> Int -> Int -> List ( String, String )
 
 
+colorString : Color -> String
+colorString color =
+    let
+        { red, green, blue, alpha } =
+            Color.toRgb color
+
+        colorList =
+            [ toString red, toString green, toString blue, toString alpha ]
+    in
+        "rgba("
+            ++ (String.concat <|
+                    List.intersperse "," <|
+                        colorList
+               )
+            ++ ")"
+
+
 randomStyleCss : RandomStyle -> List ( String, String )
-randomStyleCss { fontSize, height, marginLeft, marginTop } =
+randomStyleCss { fontSize, height, marginLeft, marginTop, color } =
     let
         randPixel int =
             (toString int) ++ "px"
@@ -65,7 +56,7 @@ randomStyleCss { fontSize, height, marginLeft, marginTop } =
             [ "fontSize", "height", "margin-left", "margin-top" ]
     in
         [ ( "position", "absolute" )
-        , ( "color", "teal" )
+        , ( "color", Debug.log "color" <| colorString color )
         , ( "fontSize", randPixel fontSize )
         , ( "height", randPixel height )
         , ( "marginLeft", randPixel marginLeft )
@@ -81,3 +72,8 @@ randomItem string randomStyle =
 toRandomItems : List String -> List RandomStyle -> List (Html msg)
 toRandomItems stringList randomList =
     List.map2 randomItem stringList randomList
+
+
+randomColorGenerator : Random.Generator Color.Color
+randomColorGenerator =
+    Random.map3 Color.rgb (Random.int 0 255) (Random.int 0 255) (Random.int 0 255)
