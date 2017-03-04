@@ -76,7 +76,7 @@ update msg model =
     case msg of
         GenerateValues strings ->
             -- ( model, Cmd.none )
-            ( model, Random.generate (NewItems << toRandomItems strings) (randomListsGenerator <| List.length strings) )
+            ( model, Random.generate (NewItems << toRandomItems strings) (randomStyleListGenerator <| List.length strings) )
 
         NewItems div ->
             ( { model | items = List.append model.items div }, Cmd.none )
@@ -142,7 +142,7 @@ view model =
                 ]
             ]
     else
-        div [ style [ ( "height", "1000px" ), ( "width", "100%" ) ] ] <|
+        div [ style [ ( "height", "1000px" ), ( "width", "1000px" ) ] ] <|
             List.concat
                 [ [ button [ onClick (GenerateValues [ "hahahah" ]) ] [ text "Make random text" ]
                   , button [ onClick <| GenerateValues (Maybe.mapWithDefault [] (\m -> [ m.name ]) model.me) ] [ text "Me" ]
