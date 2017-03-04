@@ -7,3 +7,11 @@ type alias Me =
 
 type alias Project =
     { project_name : String }
+
+
+type alias Stories =
+    List Story
+
+
+type alias Story =
+    { name : String }

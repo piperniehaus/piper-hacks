@@ -6,9 +6,12 @@ import Html.Events exposing (..)
 import Random
 import Task
 import Types exposing (..)
-import MeService exposing (..)
+import MeApi exposing (..)
+import ProjectApi exposing (..)
 import Http exposing (..)
 import ItemMaker exposing (..)
+import ProjectsCollection exposing (..)
+import MaybeHelper as Maybe
 
 
 -- component import example
@@ -33,6 +36,9 @@ type alias Model =
     { projectId : Int
     , token : String
     , items : List (Html Msg)
+    , projectsColletion : ProjectsCollection
+    , tokenValid : Bool
+    , me : Maybe Me
     }
 
 
@@ -41,6 +47,9 @@ init =
     ( { projectId = 0
       , token = ""
       , items = []
+      , projectsColletion = ProjectsCollection []
+      , tokenValid = False
+      , me = Nothing
       }
     , Cmd.none
     )
@@ -57,6 +66,9 @@ type Msg
     | FetchMeResponse (Result Error Me)
     | Clear
     | UpdateToken String
+    | ValidateToken
+    | FetchStoriesRequest Int
+    | FetchStoriesResponse (Result Error Stories)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -75,7 +87,22 @@ update msg model =
         FetchMeResponse result ->
             case result of
                 Ok me ->
-                    ( model, message (GenerateValues <| [ me.name ]) )
+                    ( { model | tokenValid = True, me = Just me }, Cmd.none )
+
+                Err string ->
+                    let
+                        foo =
+                            (Debug.log "Error" string)
+                    in
+                        ( model, Cmd.none )
+
+        FetchStoriesRequest id ->
+            ( model, Http.send (FetchStoriesResponse) <| fetchStoriesCmd model.token id )
+
+        FetchStoriesResponse result ->
+            case result of
+                Ok stories ->
+                    ( model, message <| GenerateValues <| List.map .name stories )
 
                 Err string ->
                     let
@@ -90,6 +117,9 @@ update msg model =
         UpdateToken token ->
             ( { model | token = token }, Cmd.none )
 
+        ValidateToken ->
+            ( model, message FetchMeRequest )
+
 
 
 -- VIEW
@@ -99,14 +129,44 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ style [ ( "height", "100%" ), ( "width", "100%" ) ] ] <|
-        List.append
-            [ button [ onClick (GenerateValues [ "hahahah" ]) ] [ text "Make random text" ]
-            , button [ onClick FetchMeRequest ] [ text "Me" ]
-            , button [ onClick Clear ] [ text "Clear" ]
-            , input [ onInput UpdateToken, placeholder "Tracker token" ] []
+    if not model.tokenValid then
+        div []
+            [ div [ style [ ( "fontFamily", "Helvetica" ), ( "fontSize", "50px" ) ] ] [ text "Please input your Tracker Token" ]
+            , Html.form [ onSubmit ValidateToken ]
+                [ input
+                    [ onInput UpdateToken
+                    , placeholder "Tracker token"
+                    ]
+                    []
+                , button [ type_ "submit" ] [ text "Go!" ]
+                ]
             ]
-            model.items
+    else
+        div [ style [ ( "height", "1000px" ), ( "width", "100%" ) ] ] <|
+            List.concat
+                [ [ button [ onClick (GenerateValues [ "hahahah" ]) ] [ text "Make random text" ]
+                  , button [ onClick <| GenerateValues (Maybe.mapWithDefault [] (\m -> [ m.name ]) model.me) ] [ text "Me" ]
+                  , button [ onClick Clear ] [ text "Clear" ]
+                  ]
+                , myProjectsButtons model.me
+                , model.items
+                ]
+
+
+myProjectsButtons : Maybe Me -> List (Html Msg)
+myProjectsButtons maybeMe =
+    let
+        projects =
+            Maybe.mapWithDefault [] .projects maybeMe
+    in
+        List.map
+            (\p ->
+                button
+                    [ onClick <| GenerateValues [ p.project_name ]
+                    ]
+                    [ text <| p.project_name ]
+            )
+            projects
 
 
 message : msg -> Cmd msg

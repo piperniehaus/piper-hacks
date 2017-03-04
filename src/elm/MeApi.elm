@@ -1,4 +1,4 @@
-module MeService exposing (..)
+module MeApi exposing (..)
 
 import Http exposing (..)
 import Json.Decode as Decode
