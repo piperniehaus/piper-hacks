@@ -14,7 +14,7 @@ fetchStoriesCmd csrfToken id =
             [ Http.header "Content-Type" "application/json"
             , Http.header "X-TrackerToken" csrfToken
             ]
-        , url = "https://www.pivotaltracker.com/services/v5/projects/" ++ toString id ++ "?fields=%3Adefault"
+        , url = "https://www.pivotaltracker.com/services/v5/projects/" ++ toString (Debug.log "id" id) ++ "/stories?limit=10"
         , body = emptyBody
         , expect = expectJson storiesDecoder
         , timeout = Nothing
@@ -31,3 +31,5 @@ storyDecoder : Decode.Decoder Story
 storyDecoder =
     Decode.succeed Story
         |: Decode.field "name" Decode.string
+        |: Decode.field "id" Decode.int
+        |: Decode.field "project_id" Decode.int

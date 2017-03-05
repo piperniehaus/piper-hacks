@@ -40,3 +40,4 @@ projectDecoder : Decode.Decoder Project
 projectDecoder =
     Decode.succeed Project
         |: Decode.field "project_name" Decode.string
+        |: Decode.field "project_id" Decode.int

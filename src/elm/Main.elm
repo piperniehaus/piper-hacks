@@ -8,6 +8,7 @@ import Task
 import Types exposing (..)
 import MeApi exposing (..)
 import ProjectApi exposing (..)
+import StoryApi exposing (..)
 import Http exposing (..)
 import ItemMaker exposing (..)
 import ProjectsCollection exposing (..)
@@ -59,18 +60,6 @@ init =
 -- UPDATE
 
 
-type Msg
-    = GenerateValues (List String)
-    | NewItems (List (Html Msg))
-    | FetchMeRequest
-    | FetchMeResponse (Result Error Me)
-    | Clear
-    | UpdateToken String
-    | ValidateToken
-    | FetchStoriesRequest Int
-    | FetchStoriesResponse (Result Error Stories)
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -102,7 +91,22 @@ update msg model =
         FetchStoriesResponse result ->
             case result of
                 Ok stories ->
-                    ( model, message <| GenerateValues <| List.map .name stories )
+                    ( model, message <| GenerateValues <| List.map (\s -> ( s.name, Just (FetchCommentsRequest s.project_id s.id) )) stories )
+
+                Err string ->
+                    let
+                        foo =
+                            (Debug.log "Error" string)
+                    in
+                        ( model, Cmd.none )
+
+        FetchCommentsRequest projectId storyId ->
+            ( model, Http.send (FetchCommentsResponse) <| fetchCommentsCmd model.token projectId storyId )
+
+        FetchCommentsResponse result ->
+            case result of
+                Ok comments ->
+                    ( model, message <| GenerateValues <| List.map (\s -> ( s.text, Nothing )) comments )
 
                 Err string ->
                     let
@@ -142,10 +146,10 @@ view model =
                 ]
             ]
     else
-        div [ style [ ( "height", "1000px" ), ( "width", "1000px" ) ] ] <|
+        div [ style [ ( "height", "1000px" ), ( "width", "1000px" ), ( "overflow", "hidden" ) ] ] <|
             List.concat
-                [ [ button [ onClick (GenerateValues [ "hahahah" ]) ] [ text "Make random text" ]
-                  , button [ onClick <| GenerateValues (Maybe.mapWithDefault [] (\m -> [ m.name ]) model.me) ] [ text "Me" ]
+                [ [ button [ onClick (GenerateValues [ ( "hahahah", Nothing ) ]) ] [ text "Make random text" ]
+                  , button [ onClick <| GenerateValues (Maybe.mapWithDefault [] (\m -> [ ( m.name, Nothing ) ]) model.me) ] [ text "Me" ]
                   , button [ onClick Clear ] [ text "Clear" ]
                   ]
                 , myProjectsButtons model.me
@@ -162,7 +166,7 @@ myProjectsButtons maybeMe =
         List.map
             (\p ->
                 button
-                    [ onClick <| GenerateValues [ p.project_name ]
+                    [ onClick <| GenerateValues [ ( p.project_name, (Just <| FetchStoriesRequest p.project_id) ) ]
                     ]
                     [ text <| p.project_name ]
             )

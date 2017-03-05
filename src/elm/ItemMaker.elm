@@ -4,6 +4,8 @@ import Random
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Color exposing (Color)
+import Html.Events exposing (..)
+import Types exposing (..)
 
 
 type alias RandomStyle =
@@ -17,7 +19,7 @@ type alias RandomStyle =
 
 randomStyleGenerator : Random.Generator RandomStyle
 randomStyleGenerator =
-    Random.map5 (RandomStyle) (Random.int 0 400) (Random.int 0 400) (Random.int 0 400) (Random.int 0 400) randomColorGenerator
+    Random.map5 (RandomStyle) (Random.int 0 400) (Random.int 0 400) (Random.int 0 200) (Random.int 0 200) randomColorGenerator
 
 
 randomStyleListGenerator : Int -> Random.Generator (List RandomStyle)
@@ -55,8 +57,8 @@ randomStyleCss { fontSize, height, marginLeft, marginTop, color } =
         pixelAttributes =
             [ "fontSize", "height", "margin-left", "margin-top" ]
     in
-        [ ( "position", "absolute" )
-        , ( "color", Debug.log "color" <| colorString color )
+        [ ( "color", Debug.log "color" <| colorString color )
+        , ( "position", "absolute" )
         , ( "fontSize", randPixel fontSize )
         , ( "height", randPixel height )
         , ( "marginLeft", randPixel marginLeft )
@@ -64,12 +66,17 @@ randomStyleCss { fontSize, height, marginLeft, marginTop, color } =
         ]
 
 
-randomItem : String -> RandomStyle -> Html msg
-randomItem string randomStyle =
-    div [ style <| randomStyleCss randomStyle ] [ text string ]
+randomItem : ( String, Maybe Msg ) -> RandomStyle -> Html Msg
+randomItem ( string, myMsg ) randomStyle =
+    case myMsg of
+        Just msg ->
+            div [ style <| List.append [ ( "cursor", "pointer" ) ] <| randomStyleCss randomStyle, onClick msg ] [ text string ]
+
+        Nothing ->
+            div [ style <| randomStyleCss randomStyle ] [ text string ]
 
 
-toRandomItems : List String -> List RandomStyle -> List (Html msg)
+toRandomItems : List ( String, Maybe Msg ) -> List RandomStyle -> List (Html Msg)
 toRandomItems stringList randomList =
     List.map2 randomItem stringList randomList
 
